@@ -1,23 +1,25 @@
 #!/usr/bin/env python
 
 import os
+import sys
 import socket
 import humanize
 import datetime
 import textwrap
-
 import luma.oled.device
 import luma.core.serial
+import logging
 
 from Queue import Queue
 from threading import Thread
 from luma.core.render import canvas
-
 from PIL import ImageFont, Image
 from consts import LOOPER, WIFI, LAST_UPLOAD, BLINK_EVENT
-
 from wifi import Wifi, WifiState, get_wifi_strength, wifi_watcher
 from looper import get_last_upload, looper_log_watcher
+
+
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 def get_box_id():
@@ -146,16 +148,15 @@ def get_device():
         serial = luma.core.serial.i2c(port=1, address='0x3C')
         return Device(serial, width=128, height=64, rotate=0)
     except Exception:
-        pass
+        logging.exception('get_device')
 
 def main():
     device = get_device()
 
     if device is None:
-        print('oled screen not found, exiting')
-        return
-
-    Screen(device).start()
+        logging.error('oled screen not found, exiting')
+    else:
+        Screen(device).start()
 
 
 if __name__ == '__main__':
