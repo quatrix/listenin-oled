@@ -1,0 +1,12 @@
+humanize==0.5.1
+luma.core==0.1.2
+luma.lcd==0.2.0
+luma.oled==2.0.1
+olefile==0.44
+Pillow==4.0.0
+psutil==5.0.1
+python-dateutil==2.6.0
+RPi.GPIO==0.6.3
+six==1.10.0
+smbus2==0.1.4
+spidev==3.2
