@@ -20,15 +20,12 @@ from looper import get_last_upload, looper_log_watcher
 
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+logging.getLogger('PIL').setLevel(logging.ERROR)
 
 
 def get_box_id():
     return int(socket.gethostname().split('box-')[-1])
 
-
-def get_image(name):
-    image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'images', '{}.png'.format(name)))
-    return Image.open(image_path).convert(device.mode)
 
 
 
@@ -44,6 +41,10 @@ class Screen(object):
 
         self.device = oled
         self.q = Queue()
+
+    def get_image(self, name):
+        image_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'images', '{}.png'.format(name)))
+        return Image.open(image_path).convert(self.device.mode)
 
     def start(self):
         self.start_worker(wifi_watcher)
@@ -81,12 +82,12 @@ class Screen(object):
 
     def render_header(self, draw):
         wifi_icon, wifi_ssid = self.get_wifi_state()
-        cell_icon = get_image('3g/3')
+        cell_icon = self.get_image('3g/3')
         font = self.font(12)
 
         draw.bitmap((0, 0), cell_icon, fill='white')
         draw.text((33, -1), '{0:02d}'.format(self._state['id']), font=font, fill='white')
-        draw.bitmap((49, -1), get_image(wifi_icon), fill='white')
+        draw.bitmap((49, -1), self.get_image(wifi_icon), fill='white')
         draw.text((67, -1), wifi_ssid, font=font, fill='white')
         draw.line((0, 12, self.width, 12), fill='white')
 
@@ -104,8 +105,8 @@ class Screen(object):
 
     def render_footer(self, draw):
         last_upload = self._state[LAST_UPLOAD]
-        uploaded_icon = get_image('uploaded')
-        heart_icon = get_image('heart')
+        uploaded_icon = self.get_image('uploaded')
+        heart_icon = self.get_image('heart')
 
         if last_upload is None:
             last_upload = 'unknown'
@@ -135,7 +136,7 @@ class Screen(object):
     def render(self):
         with canvas(self.device) as draw:
             if self._state[BLINK_EVENT] is None:
-                draw.bitmap((0, 0), get_image('splash'), fill='white')
+                draw.bitmap((0, 0), self.get_image('splash'), fill='white')
             else:
                 self.render_header(draw)
                 self.render_body(draw)
