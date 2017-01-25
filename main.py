@@ -144,7 +144,7 @@ class Screen(object):
 
 def get_device():
     try:
-        Device = luma.oled.device['ssd1306']
+        Device = getattr(luma.oled.device, 'ssd1306')
         serial = luma.core.serial.i2c(port=1, address='0x3C')
         return Device(serial, width=128, height=64, rotate=0)
     except Exception:
