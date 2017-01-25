@@ -6,10 +6,13 @@ import humanize
 import datetime
 import textwrap
 
+import luma.oled.device
+import luma.core.serial
+
 from Queue import Queue
 from threading import Thread
-from demo_opts import device
 from luma.core.render import canvas
+
 from PIL import ImageFont, Image
 from consts import LOOPER, WIFI, LAST_UPLOAD, BLINK_EVENT
 
@@ -137,7 +140,21 @@ class Screen(object):
                 self.render_footer(draw)
 
 
+def get_device():
+    try:
+        Device = luma.oled.device['ssd1306']
+        serial = luma.core.serial.i2c(port=1, address='0x3C')
+        return Device(serial, width=128, height=64, rotate=0)
+    except Exception:
+        pass
+
 def main():
+    device = get_device()
+
+    if device is None:
+        print('oled screen not found, exiting')
+        return
+
     Screen(device).start()
 
 
