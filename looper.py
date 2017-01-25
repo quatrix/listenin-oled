@@ -34,7 +34,11 @@ def get_last_upload():
 
 def get_looper_state(line):
     line = line.split()
-    ts, msg = dateutil.parser.parse(line[0]), ' '.join(line[3:])
+
+    try:
+        ts, msg = dateutil.parser.parse(line[0]), ' '.join(line[3:])
+    except Exception:
+        return None
 
     if msg.startswith(WAITING_FOR_SIGNAL):
         return LooperState(ts, 'Waiting for Audio')
