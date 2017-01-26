@@ -14,28 +14,28 @@ from Queue import Queue
 from threading import Thread
 from luma.core.render import canvas
 from PIL import ImageFont, Image
-from consts import LOOPER, WIFI, LAST_UPLOAD, BLINK_EVENT
+from consts import LOOPER, WIFI, BLINK_EVENT
 from wifi import Wifi, WifiState, get_wifi_strength, wifi_watcher
-from looper import get_last_upload, looper_log_watcher
+from looper import get_last_upload, looper_log_watcher, UPLOADED_SUCCESSFULLY
 
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logging.getLogger('PIL').setLevel(logging.ERROR)
 
 
+ID = 'id'
+LAST_UPLOAD = 'last_upload'
+
 def get_box_id():
     return int(socket.gethostname().split('box-')[-1])
-
-
-
 
 class Screen(object):
     def __init__(self, oled):
         self._state = {
-            'id': get_box_id(),
+            ID: get_box_id(),
+            LAST_UPLOAD: get_last_upload(),
             WIFI: Wifi(WifiState.UNKNOWN, None),
             LOOPER: 'Initializing',
-            LAST_UPLOAD: get_last_upload(),
             BLINK_EVENT: None,
         }
 
@@ -57,6 +57,9 @@ class Screen(object):
                 self._state[event] = not self._state[event]
             else:
                 self._state[event] = msg
+
+            if event == LOOPER and msg == UPLOADED_SUCCESSFULLY:
+                self._state[LAST_UPLOAD] = datetime.datetime.now()
 
             self.render()
     
