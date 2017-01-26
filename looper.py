@@ -1,5 +1,6 @@
 import dateutil.parser
 import socket
+import logging
 
 from subprocess import check_output, CalledProcessError, Popen, PIPE
 from collections import namedtuple
@@ -22,6 +23,7 @@ def get_last_upload():
         last_upload = open('/var/lib/listenin-looper/last_upload').read()
         return dateutil.parser.parse(last_upload)
     except Exception:
+        logging.exception('get_last_upload')
         return None
 
 
@@ -31,6 +33,7 @@ def get_looper_state(line):
     try:
         ts, msg = dateutil.parser.parse(line[0]), ' '.join(line[3:])
     except Exception:
+        logging.exception('get_looper_state')
         return None
 
     if msg.startswith(WAITING_FOR_SIGNAL):
@@ -38,12 +41,12 @@ def get_looper_state(line):
 
     if msg.startswith(RECORDING):
         return LooperState(ts, 'Recording')
-    
+
     if msg.startswith(UPLOADING):
         return LooperState(ts, 'Uploading')
 
     if msg.startswith(UPLOADED):
-        return LooperState(ts, 'Uploaded')
+        return LooperState(ts, 'Sleeping until next sample')
 
     if msg.startswith(ERROR):
         return LooperState(ts, 'Error:{}'.format(msg.split(ERROR)[-1]))
