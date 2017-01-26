@@ -1,6 +1,7 @@
 import dateutil.parser
 import socket
 import logging
+import datetime
 
 from subprocess import check_output, CalledProcessError, Popen, PIPE
 from collections import namedtuple
@@ -20,8 +21,8 @@ LooperState = namedtuple('LooperState', ['ts', 'state'])
 
 def get_last_upload():
     try:
-        last_upload = open('/var/lib/listenin-looper/last_upload').read()
-        return dateutil.parser.parse(last_upload)
+        last_uploaded = int(open('/var/lib/listenin-looper/last_uploaded').read())
+        return datetime.datetime.fromtimestamp(last_uploaded)
     except Exception:
         logging.exception('get_last_upload')
         return None
