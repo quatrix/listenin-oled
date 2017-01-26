@@ -17,6 +17,11 @@ ERROR = 'RuntimeError:'
 LooperState = namedtuple('LooperState', ['ts', 'state'])
 
 
+def syslog_to_ts_and_msg(line):
+    line = line.split(socket.gethostname() + ' ', 1)
+    return dateutil.parser.parse(line[0]), line[1:]
+
+
 def get_last_upload():
     try:
         cmd = '/bin/zgrep uploaded /var/log/syslog* | head -n 1'
@@ -26,8 +31,9 @@ def get_last_upload():
             return None
 
         res = res.split(':', 1)[1]
-        res = res.split(socket.gethostname())[0]
-        return dateutil.parser.parse(res)
+        ts, _ = syslog_to_ts_and_msg(res)
+
+        return ts
     except Exception:
         return None
 
@@ -36,7 +42,7 @@ def get_looper_state(line):
     line = line.split()
 
     try:
-        ts, msg = dateutil.parser.parse(line[0]), ' '.join(line[3:])
+        ts, msg = syslog_to_ts_and_msg(line)
     except Exception:
         return None
 
@@ -60,7 +66,7 @@ def get_looper_state(line):
 
 
 def looper_log_watcher(q):
-    cmd = ['journalctl', '-o', 'short-iso', '-u', 'listenin-looper']
+    cmd = ['journalctl', '-o', 'short', '-u', 'listenin-looper']
     f = Popen(cmd + ['-n', '1000'], stdout=PIPE, stderr=PIPE, bufsize=1)
     f.stdout.readline()
 
