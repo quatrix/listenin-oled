@@ -1,19 +1,18 @@
 import socket
 import logging
 import datetime
+import json
 
 from subprocess import check_output, CalledProcessError, Popen, PIPE
 from consts import LOOPER, BLINK_EVENT
 
 DEVNULL=open('/dev/null', 'w')
 
-WAITING_FOR_SIGNAL = 'INFO:root:waiting for audio signal'
-RECORDING = 'INFO:root:recording'
-UPLOADING = 'INFO:root:uploading'
-UPLOADED = 'INFO:root:sample recorded and uploaded'
-BLINK = 'INFO:root:blink'
-ERROR = 'RuntimeError:'
-
+WAITING_FOR_SIGNAL = 'waiting for audio signal'
+RECORDING = 'recording'
+UPLOADING = 'uploading'
+UPLOADED = 'sample recorded and uploaded'
+BLINK = 'blink'
 
 UPLOADED_SUCCESSFULLY = 'Idle until next sample'
 
@@ -30,9 +29,15 @@ def get_looper_state(line):
     line = line.split()
 
     try:
-        msg = ' '.join(line[3:])
+        line = json.loads(' '.join(line[3:]))
     except Exception:
+        logging.exception('get_looper_state')
         return None
+
+    if line['levelname'] == 'ERROR':
+        return 'Error:{}'.format(line['message'])
+
+    msg = line['message']
 
     if msg.startswith(WAITING_FOR_SIGNAL):
         return 'Waiting for Audio'
@@ -45,9 +50,6 @@ def get_looper_state(line):
 
     if msg.startswith(UPLOADED):
         return UPLOADED_SUCCESSFULLY
-
-    if msg.startswith(ERROR):
-        return 'Error:{}'.format(msg.split(ERROR)[-1])
 
     if msg.startswith(BLINK):
         return 'Blink'
