@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import division
 
 import os
 import sys
@@ -9,15 +10,16 @@ import textwrap
 import luma.oled.device
 import luma.core.serial
 import logging
+import math
 
 from Queue import Queue
 from threading import Thread
 from luma.core.render import canvas
 from PIL import ImageFont, Image
-from consts import LOOPER, WIFI, BLINK_EVENT
+from consts import LOOPER, WIFI, BLINK_EVENT, MODEM
 from wifi import Wifi, WifiState, get_wifi_strength, wifi_watcher
 from looper import get_last_upload, looper_log_watcher, UPLOADED_SUCCESSFULLY
-
+from modem import ModemState, get_modem_strength, modem_watcher
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 logging.getLogger('PIL').setLevel(logging.ERROR)
@@ -35,6 +37,7 @@ class Screen(object):
             ID: get_box_id(),
             LAST_UPLOAD: get_last_upload(),
             WIFI: Wifi(WifiState.UNKNOWN, None),
+            MODEM: ModemState.UNKNOWN,
             LOOPER: 'Initializing',
             BLINK_EVENT: None,
         }
@@ -48,6 +51,7 @@ class Screen(object):
 
     def start(self):
         self.start_worker(wifi_watcher)
+        self.start_worker(modem_watcher)
         self.start_worker(looper_log_watcher)
 
         while True:
@@ -83,12 +87,33 @@ class Screen(object):
         if wifi.state == WifiState.CONNECTED:
             return 'wifi/{}'.format(get_wifi_strength()), wifi.ssid
 
+    def get_modem_state(self):
+        modem = self._state[MODEM]
+
+        if modem == ModemState.CONNECTED:
+            signal = get_modem_strength()
+            signal = int(max(0, math.ceil(signal / 25)-1))
+            return self.get_image('3g/{}'.format(signal)), None
+
+        if modem == ModemState.CONNECTING:
+            return self.get_image('3g/connecting'), None
+
+        if modem == ModemState.DISCONNECTED:
+            return None, 'NO 3G'
+
+        return None, '??????'
+
+        
     def render_header(self, draw):
         wifi_icon, wifi_ssid = self.get_wifi_state()
-        cell_icon = self.get_image('3g/3')
+        modem_icon, modem_text = self.get_modem_state()
         font = self.font(12)
 
-        draw.bitmap((0, 0), cell_icon, fill='white')
+        if modem_icon:
+            draw.bitmap((0, 0), modem_icon, fill='white')
+        else:
+            draw.text((0, -1), modem_text, font=font, fill='white')
+
         draw.text((33, -1), '{0:02d}'.format(self._state['id']), font=font, fill='white')
         draw.bitmap((49, -1), self.get_image(wifi_icon), fill='white')
         draw.text((67, -1), wifi_ssid, font=font, fill='white')
